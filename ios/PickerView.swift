@@ -191,7 +191,7 @@ class PickerView: UIView, UIPickerViewDelegate, UIPickerViewDataSource {
     let label = UILabel(frame: frame)
     label.text = options[component].items[row].label
     label.accessibilityIdentifier = options[component].items[row].testID
-    label.font = label.font.withSize(15.5)
+    label.font = label.font.withSize(21) // TODO: selected title default should be 23.5
     if #available(iOS 14, *) {
       // Do not modify the font color.
     } else {
