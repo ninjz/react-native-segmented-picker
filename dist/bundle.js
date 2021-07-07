@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Dimensions, Platform, View, TouchableOpacity, Text, requireNativeComponent, UIManager, findNodeHandle, Modal, TouchableWithoutFeedback, FlatList } from 'react-native';
-import { View as View$1 } from 'react-native-animatable';
+import { StyleSheet, Dimensions, Platform, requireNativeComponent, UIManager, findNodeHandle, View, TouchableOpacity, Text } from 'react-native';
 import PropTypes from 'prop-types';
 
 const defaultProps = {
@@ -160,126 +159,6 @@ var styles = StyleSheet.create({
     height: '100%'
   }
 });
-
-var styles$1 = StyleSheet.create({
-  toolbarContainer: {
-    width: '100%',
-    height: 42,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    alignSelf: 'flex-start'
-  },
-  toolbarConfirmContainer: {
-    height: '100%',
-    paddingLeft: 30,
-    justifyContent: 'center'
-  },
-  toolbarConfirmText: {
-    fontWeight: 'bold',
-    fontSize: 15,
-    paddingTop: 0,
-    paddingRight: GUTTER_WIDTH,
-    paddingBottom: TEXT_CORRECTION,
-    paddingLeft: 0
-  }
-});
-
-/**
- * Top action bar that displays above the picker modal which allows a user to confirm
- * their selections and close the modal.
- */
-
-var Toolbar = (({
-  confirmText,
-  confirmTextColor,
-  toolbarBackground,
-  toolbarBorderColor,
-  onConfirm
-}) =>
-/*#__PURE__*/
-React.createElement(View, {
-  style: [styles$1.toolbarContainer, {
-    backgroundColor: toolbarBackground,
-    borderBottomColor: toolbarBorderColor
-  }]
-},
-/*#__PURE__*/
-React.createElement(TouchableOpacity, {
-  activeOpacity: 0.4,
-  onPress: onConfirm,
-  testID: TEST_IDS.CONFIRM_BUTTON
-},
-/*#__PURE__*/
-React.createElement(View, {
-  style: styles$1.toolbarConfirmContainer
-},
-/*#__PURE__*/
-React.createElement(Text, {
-  style: [styles$1.toolbarConfirmText, {
-    color: confirmTextColor
-  }]
-}, confirmText)))));
-
-const ITEM_HEIGHT$1 = Platform.select(ITEM_HEIGHTS);
-var styles$2 = StyleSheet.create({
-  selectionMarkerContainer: {
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingLeft: GUTTER_WIDTH,
-    paddingRight: GUTTER_WIDTH
-  },
-  // Eliminates border rendering inconsistencies between iOS & Android
-  selectionMarkerBorder: {
-    width: '100%',
-    height: Platform.select({
-      ios: 0.6,
-      android: 0.7
-    })
-  },
-  selectionMarker: {
-    width: '100%',
-    height: ITEM_HEIGHT$1
-  }
-});
-
-/**
- * Horizontal bar used to indicate the current picker selections.
- */
-
-var SelectionMarker = (({
-  backgroundColor,
-  borderColor
-}) =>
-/*#__PURE__*/
-React.createElement(View, {
-  style: styles$2.selectionMarkerContainer
-},
-/*#__PURE__*/
-React.createElement(View, {
-  style: [styles$2.selectionMarkerBorder, {
-    backgroundColor: borderColor
-  }]
-}),
-/*#__PURE__*/
-React.createElement(View, {
-  style: [styles$2.selectionMarker, {
-    backgroundColor
-  }]
-}),
-/*#__PURE__*/
-React.createElement(View, {
-  style: [styles$2.selectionMarkerBorder, {
-    backgroundColor: borderColor
-  }]
-})));
 
 var UIPicker = requireNativeComponent('UIPicker');
 
@@ -452,7 +331,7 @@ class UIPickerManager {
 
 }
 
-const ITEM_HEIGHT$2 = Platform.select(ITEM_HEIGHTS);
+const ITEM_HEIGHT$1 = Platform.select(ITEM_HEIGHTS);
 const {
   FLAT_LIST_REF,
   LAST_SCROLL_OFFSET,
@@ -740,7 +619,7 @@ class SegmentedPicker extends Component {
       const {
         pickersHeight
       } = this.state;
-      return (pickersHeight - ITEM_HEIGHT$2 - GUTTER_HEIGHT * 2) / 2;
+      return (pickersHeight - ITEM_HEIGHT$1 - GUTTER_HEIGHT * 2) / 2;
     };
     /**
      * @private
@@ -756,7 +635,7 @@ class SegmentedPicker extends Component {
     this.nearestOptionIndex = (offsetY, column) => {
       const scrollDirection = this.cache.get(`${SCROLL_DIRECTION}${column}`) || 1;
       const rounding = scrollDirection === 0 ? 'floor' : 'ceil';
-      const adjustedOffsetY = scrollDirection === 0 ? offsetY / ITEM_HEIGHT$2 + 0.35 : offsetY / ITEM_HEIGHT$2 - 0.35;
+      const adjustedOffsetY = scrollDirection === 0 ? offsetY / ITEM_HEIGHT$1 + 0.35 : offsetY / ITEM_HEIGHT$1 - 0.35;
       let nearestArrayMember = Math[rounding](adjustedOffsetY) || 0; // Safety checks making sure we don't return an out of range index
 
       const columnSize = this.columnItems(column).length;
@@ -1035,70 +914,9 @@ class SegmentedPicker extends Component {
     } = this.props;
     return (
       /*#__PURE__*/
-      React.createElement(Modal, {
-        visible: visible,
-        animationType: Platform.select({
-          ios: 'fade',
-          default: 'none'
-        }),
-        transparent: true,
-        onRequestClose: this.onCancel
-      },
-      /*#__PURE__*/
-      React.createElement(View$1, {
-        useNativeDriver: true,
-        animation: "fadeIn",
-        easing: "ease-out-cubic",
-        duration: ANIMATION_TIME,
-        ref: this.modalContainerRef,
-        style: styles.modalContainer,
-        testID: TEST_IDS.PICKER
-      },
-      /*#__PURE__*/
-      React.createElement(TouchableWithoutFeedback, {
-        onPress: this.onCancel,
-        testID: TEST_IDS.CLOSE_AREA
-      },
-      /*#__PURE__*/
-      React.createElement(View, {
-        style: [styles.closeableContainer, {
-          height: `${100 - size * 100}%`
-        }]
-      })),
-      /*#__PURE__*/
-      React.createElement(View$1, {
-        useNativeDriver: true,
-        animation: {
-          from: {
-            opacity: 0,
-            translateY: 250
-          },
-          to: {
-            opacity: 1,
-            translateY: 0
-          }
-        },
-        easing: "ease-out-quint",
-        delay: 100,
-        duration: ANIMATION_TIME,
-        ref: this.pickerContainerRef,
-        style: [styles.pickerContainer, {
-          height: `${size * 100}%`,
-          backgroundColor
-        }]
-      },
-      /*#__PURE__*/
-      React.createElement(Toolbar, {
-        confirmText: confirmText,
-        confirmTextColor: confirmTextColor,
-        toolbarBackground: toolbarBackgroundColor,
-        toolbarBorderColor: toolbarBorderColor,
-        onConfirm: this.onConfirm
-      }),
-      /*#__PURE__*/
       React.createElement(View, {
         style: styles.selectableArea
-      }, this.isNative() &&
+      },
       /*#__PURE__*/
       React.createElement(View, {
         style: styles.nativePickerContainer
@@ -1113,79 +931,12 @@ class SegmentedPicker extends Component {
         onValueChange: this.uiPickerValueChange,
         onEmitSelections: this.uiPickerManager.ingestSelections,
         theme: {
-          itemHeight: ITEM_HEIGHT$2,
+          itemHeight: ITEM_HEIGHT$1,
           selectionBackgroundColor,
           selectionBorderColor,
           pickerItemTextColor
         }
-      })), !this.isNative() &&
-      /*#__PURE__*/
-      React.createElement(React.Fragment, null,
-      /*#__PURE__*/
-      React.createElement(SelectionMarker, {
-        backgroundColor: selectionBackgroundColor,
-        borderColor: selectionBorderColor
-      }),
-      /*#__PURE__*/
-      React.createElement(View, {
-        style: styles.pickerColumns,
-        onLayout: this.measurePickersHeight
-      }, SegmentedPicker.ApplyPickerOptionDefaults(options).map(({
-        key: column,
-        testID: columnTestID,
-        flex
-      }) =>
-      /*#__PURE__*/
-      React.createElement(View, {
-        style: [styles.pickerColumn, {
-          flex
-        }],
-        key: `${column}`
-      },
-      /*#__PURE__*/
-      React.createElement(View, {
-        style: styles.pickerList
-      },
-      /*#__PURE__*/
-      React.createElement(FlatList, {
-        data: this.columnItems(column).map(({
-          label,
-          value,
-          key,
-          testID
-        }) => ({
-          label,
-          value,
-          column,
-          testID,
-          key: `${column}_${key || label}`
-        })),
-        renderItem: this.renderPickerItem,
-        keyExtractor: item => item.key,
-        initialNumToRender: 40,
-        getItemLayout: (data, index) => ({
-          length: ITEM_HEIGHT$2,
-          offset: ITEM_HEIGHT$2 * index,
-          index
-        }),
-        contentContainerStyle: {
-          paddingTop: this.pickersVerticalPadding(),
-          paddingBottom: this.pickersVerticalPadding()
-        },
-        showsVerticalScrollIndicator: false,
-        ref: ref => this.setFlatListRef(column, ref),
-        onScroll: event => this.onScroll(event, column),
-        onScrollBeginDrag: () => this.onScrollBeginDrag(column),
-        onScrollEndDrag: event => this.onScrollEndDrag(event, column),
-        onMomentumScrollBegin: event => this.onMomentumScrollBegin(event, column),
-        onMomentumScrollEnd: event => this.onMomentumScrollEnd(event, column),
-        scrollEventThrottle: 32,
-        decelerationRate: Platform.select({
-          ios: 1,
-          android: undefined
-        }),
-        testID: `${columnTestID}`
-      }))))))))))
+      })))
     );
   }
 
@@ -1202,8 +953,6 @@ SegmentedPicker.defaultProps = defaultProps;
 SegmentedPicker.ApplyPickerOptionDefaults = options => options.map(column => Object.assign(Object.assign({}, column), {
   flex: column.flex || 1
 }));
-
-const ITEM_HEIGHT$3 = Platform.select(ITEM_HEIGHTS);
 
 export default SegmentedPicker;
 export { ANIMATION_TIME, GUTTER_HEIGHT, GUTTER_WIDTH, ITEM_HEIGHTS, TEST_IDS, TEXT_CORRECTION, TRACKING };
