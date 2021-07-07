@@ -1,15 +1,19 @@
 import React, { Component, ReactElement } from 'react';
 import {
   Platform,
+  Modal,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   FlatList,
   View,
   Text,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import * as Animatable from 'react-native-animatable';
 import { defaultProps, propTypes } from './SegmentedPickerPropTypes';
 import styles from './SegmentedPickerStyles';
+import Toolbar from '../Toolbar';
 import SelectionMarker from '../SelectionMarker';
 import UIPicker from '../UIPicker';
 import Cache from '../../services/Cache';
@@ -44,7 +48,6 @@ const {
 export interface Props {
   native: boolean;
   options: PickerOptions;
-  visible: boolean;
   defaultSelections: Selections;
   size: number;
   confirmText: string;
@@ -64,7 +67,6 @@ export interface Props {
 }
 
 interface State {
-  visible: boolean;
   pickersHeight: number;
 }
 
@@ -99,67 +101,9 @@ export default class SegmentedPicker extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      visible: false,
       pickersHeight: 0,
     };
   }
-
-  /**
-   * Used in rare circumstances where this component is mounted with the `visible`
-   * prop set to true. We must animate the picker in immediately.
-   */
-  componentDidMount(): void {
-    if (this.props.visible === true) {
-      this.show();
-    }
-  }
-
-  /**
-   * Animates in-and-out when toggling picker visibility with the `visible` prop.
-   */
-  componentDidUpdate(prevProps: Props): void {
-    const { visible: visibleProp } = this.props;
-    const { visible: visibleState } = this.state;
-    if (visibleProp === true && prevProps.visible !== true && visibleState !== true) {
-      this.show();
-    }
-    if (visibleProp === false && prevProps.visible === true) {
-      this.hide();
-    }
-  }
-
-  /**
-   * Make the picker visible on the screen.
-   * External Usage: `ref.current.show()`
-   * @return {Promise<void>}
-   */
-  show = (): Promise<void> => {
-    this.setState({ visible: true });
-    return new Promise(resolve => setTimeout(resolve, ANIMATION_TIME));
-  };
-
-  /**
-   * Hide the picker from the screen.
-   * External Usage: `ref.current.hide()`
-   * @return {Promise<void>}
-   */
-  hide = async (): Promise<void> => (
-    new Promise(async (resolve) => {
-      if (Platform.OS === 'ios') {
-        this.setState({ visible: false }, async () => {
-          await new Promise(done => setTimeout(done, ANIMATION_TIME));
-          this.cache.purge();
-          resolve();
-        });
-      } else {
-        await this.modalContainerRef.current?.fadeOut(ANIMATION_TIME);
-        this.setState({ visible: false }, () => {
-          this.cache.purge();
-          resolve();
-        });
-      }
-    })
-  );
 
   /**
    * Selects a specific picker item `label` in the picklist and focuses it.
@@ -545,9 +489,6 @@ export default class SegmentedPicker extends Component<Props, State> {
    */
   private onCancel = async (): Promise<void> => {
     const selections = { ...(await this.getCurrentSelections()) };
-    if (this.props.visible !== true) {
-      await this.hide();
-    }
     this.props.onCancel(selections);
   };
 
@@ -559,9 +500,6 @@ export default class SegmentedPicker extends Component<Props, State> {
    */
   private onConfirm = async (): Promise<void> => {
     const selections = { ...(await this.getCurrentSelections()) };
-    if (this.props.visible !== true) {
-      await this.hide();
-    }
     this.props.onConfirm(selections);
   };
 
@@ -616,7 +554,6 @@ export default class SegmentedPicker extends Component<Props, State> {
   };
 
   render() {
-    const { visible } = this.state;
     const {
       nativeTestID,
       options,
@@ -635,23 +572,90 @@ export default class SegmentedPicker extends Component<Props, State> {
     return (
       <View style={styles.selectableArea}>
         {/* Native iOS Picker is enabled */}
-        <View style={styles.nativePickerContainer}>
-          <UIPicker
-            ref={this.uiPickerManager.reactRef}
-            nativeTestID={nativeTestID}
-            style={styles.nativePicker}
-            options={SegmentedPicker.ApplyPickerOptionDefaults(options)}
-            defaultSelections={defaultSelections}
-            onValueChange={this.uiPickerValueChange}
-            onEmitSelections={this.uiPickerManager.ingestSelections}
-            theme={{
-              itemHeight: ITEM_HEIGHT,
-              selectionBackgroundColor,
-              selectionBorderColor,
-              pickerItemTextColor,
-            }}
-          />
-        </View>
+        {this.isNative() && (
+          <View style={styles.nativePickerContainer}>
+            <UIPicker
+              ref={this.uiPickerManager.reactRef}
+              nativeTestID={nativeTestID}
+              style={styles.nativePicker}
+              options={SegmentedPicker.ApplyPickerOptionDefaults(options)}
+              defaultSelections={defaultSelections}
+              onValueChange={this.uiPickerValueChange}
+              onEmitSelections={this.uiPickerManager.ingestSelections}
+              theme={{
+                itemHeight: ITEM_HEIGHT,
+                selectionBackgroundColor,
+                selectionBorderColor,
+                pickerItemTextColor,
+              }}
+            />
+          </View>
+        )}
+
+        {/* Plain JavaScript implementation (default) */}
+        {!this.isNative() && (
+          <>
+            <SelectionMarker
+              backgroundColor={selectionBackgroundColor}
+              borderColor={selectionBorderColor}
+            />
+            <View style={styles.pickerColumns} onLayout={this.measurePickersHeight}>
+              {SegmentedPicker.ApplyPickerOptionDefaults(options).map((
+                { key: column, testID: columnTestID, flex },
+              ) => (
+                <View style={[styles.pickerColumn, { flex }]} key={`${column}`}>
+                  <View style={styles.pickerList}>
+                    <FlatList
+                      data={this.columnItems(column).map(({
+                        label,
+                        value,
+                        key,
+                        testID,
+                      }) => ({
+                        label,
+                        value,
+                        column,
+                        testID,
+                        key: `${column}_${key || label}`,
+                      }))}
+                      renderItem={this.renderPickerItem}
+                      keyExtractor={item => item.key}
+                      initialNumToRender={40}
+                      getItemLayout={(data, index) => (
+                        {
+                          length: ITEM_HEIGHT,
+                          offset: ITEM_HEIGHT * index,
+                          index,
+                        }
+                      )}
+                      contentContainerStyle={{
+                        paddingTop: this.pickersVerticalPadding(),
+                        paddingBottom: this.pickersVerticalPadding(),
+                      }}
+                      showsVerticalScrollIndicator={false}
+                      ref={ref => this.setFlatListRef(column, ref)}
+                      onScroll={event => this.onScroll(event, column)}
+                      onScrollBeginDrag={() => this.onScrollBeginDrag(column)}
+                      onScrollEndDrag={event => this.onScrollEndDrag(event, column)}
+                      onMomentumScrollBegin={event => (
+                        this.onMomentumScrollBegin(event, column)
+                      )}
+                      onMomentumScrollEnd={event => (
+                        this.onMomentumScrollEnd(event, column)
+                      )}
+                      scrollEventThrottle={32}
+                      decelerationRate={Platform.select({
+                        ios: 1,
+                        android: undefined,
+                      })}
+                      testID={`${columnTestID}`}
+                    />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </View>
     );
   }
