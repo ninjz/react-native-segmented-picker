@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { StyleSheet, Dimensions, Platform, requireNativeComponent, UIManager, findNodeHandle, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, Dimensions, Platform, requireNativeComponent, UIManager, findNodeHandle, View } from 'react-native';
 import PropTypes from 'prop-types';
 
 const defaultProps = {
@@ -350,46 +350,6 @@ class SegmentedPicker extends Component {
     this.modalContainerRef = React.createRef();
     this.pickerContainerRef = React.createRef();
     /**
-     * Make the picker visible on the screen.
-     * External Usage: `ref.current.show()`
-     * @return {Promise<void>}
-     */
-
-    this.show = () => {
-      this.setState({
-        visible: true
-      });
-      return new Promise(resolve => setTimeout(resolve, ANIMATION_TIME));
-    };
-    /**
-     * Hide the picker from the screen.
-     * External Usage: `ref.current.hide()`
-     * @return {Promise<void>}
-     */
-
-
-    this.hide = async () => new Promise(async resolve => {
-      var _a;
-
-      if (Platform.OS === 'ios') {
-        this.setState({
-          visible: false
-        }, async () => {
-          await new Promise(done => setTimeout(done, ANIMATION_TIME));
-          this.cache.purge();
-          resolve();
-        });
-      } else {
-        await ((_a = this.modalContainerRef.current) === null || _a === void 0 ? void 0 : _a.fadeOut(ANIMATION_TIME));
-        this.setState({
-          visible: false
-        }, () => {
-          this.cache.purge();
-          resolve();
-        });
-      }
-    });
-    /**
      * Selects a specific picker item `label` in the picklist and focuses it.
      * External Usage: `ref.current.selectLabel()`
      * @param {string} label
@@ -399,7 +359,6 @@ class SegmentedPicker extends Component {
      * @param {boolean = false} zeroFallback: Select the first list item if not found.
      * @return {void}
      */
-
 
     this.selectLabel = (label, column, animated = true, emitEvent = true, zeroFallback = false) => {
       const index = this.findItemIndexByLabel(label, column);
@@ -558,71 +517,6 @@ class SegmentedPicker extends Component {
     };
     /**
      * @private
-     * Focuses the default picklist selections.
-     * @return {void}
-     */
-
-
-    this.setDefaultSelections = () => {
-      const {
-        options,
-        defaultSelections
-      } = this.props;
-      const dirty = this.cache.get(IS_DIRTY);
-
-      if (!dirty) {
-        setTimeout(() => {
-          // User defined default selections
-          Object.keys(defaultSelections).forEach(column => this.selectValue(defaultSelections[column], column, false, false, true)); // Set all other selections to index 0
-
-          options.filter(column => !Object.keys(defaultSelections).includes(column.key) && this.columnItems(column.key).length > 0).forEach(column => this.selectIndex(0, column.key, false, false));
-        }, 0);
-      }
-    };
-    /**
-     * @private
-     * @param {string} column
-     * @param {object} ref: The column's rendered FlatList component.
-     * @return {void}
-     */
-
-
-    this.setFlatListRef = (column, ref) => {
-      if (ref) {
-        this.cache.set(`${FLAT_LIST_REF}${column}`, ref);
-        this.setDefaultSelections();
-      }
-    };
-    /**
-     * @private
-     * @return {void}
-     */
-
-
-    this.measurePickersHeight = event => {
-      const {
-        height
-      } = event.nativeEvent.layout;
-      this.setState({
-        pickersHeight: height
-      });
-    };
-    /**
-     * @private
-     * Calculates the padding top and bottom for the pickers so that the first and
-     * last list items are centered in the marker when fully scrolled up or down.
-     * @return {number}
-     */
-
-
-    this.pickersVerticalPadding = () => {
-      const {
-        pickersHeight
-      } = this.state;
-      return (pickersHeight - ITEM_HEIGHT$1 - GUTTER_HEIGHT * 2) / 2;
-    };
-    /**
-     * @private
      * Determines the index of the nearest option in the list based off the specified Y
      * scroll offset.
      * @param {number} offsetY: The scroll view content offset from react native (should
@@ -649,196 +543,12 @@ class SegmentedPicker extends Component {
       return nearestArrayMember;
     };
     /**
-     * @private
-     * Calculates the current scroll direction based off the last and current Y offsets.
-     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
-     * @param {string} column
-     * @return {void}
-     */
-
-
-    this.onScroll = (event, column) => {
-      if (!event.nativeEvent) return;
-      const {
-        y
-      } = event.nativeEvent.contentOffset;
-      const lastScrollOffset = this.cache.get(`${LAST_SCROLL_OFFSET}${column}`);
-
-      if (lastScrollOffset !== null && lastScrollOffset < y) {
-        this.cache.set(`${SCROLL_DIRECTION}${column}`, 1); // Down
-      } else {
-        this.cache.set(`${SCROLL_DIRECTION}${column}`, 0); // Up
-      }
-
-      this.cache.set(`${LAST_SCROLL_OFFSET}${column}`, y);
-    };
-    /**
-     * @private
-     * @param {string} column
-     * @return {void}
-     */
-
-
-    this.onScrollBeginDrag = column => {
-      this.cache.set(`${IS_DRAGGING}${column}`, true);
-      const dirty = this.cache.get(IS_DIRTY);
-
-      if (!dirty) {
-        this.cache.set(IS_DIRTY, true);
-      }
-    };
-    /**
-     * @private
-     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
-     * @param {string} column
-     * @return {void}
-     */
-
-
-    this.onScrollEndDrag = (event, column) => {
-      this.cache.set(`${IS_DRAGGING}${column}`, false);
-
-      if (Platform.OS === 'ios' && !this.cache.get(`${IS_MOMENTUM_SCROLLING}${column}`)) {
-        // Not required on Android because all scrolls exit as momentum scrolls,
-        // so the below method has already been called prior to this event.
-        // Timeout is to temporarily allow raising fingers.
-        this.selectIndexFromScrollPosition(event, column, 280);
-      }
-    };
-    /**
-     * @private
-     * @param {object} event: Event details from React Native.
-     * @param {string} column
-     * @return {void}
-     */
-
-
-    this.onMomentumScrollBegin = (event, column) => {
-      this.cache.set(`${IS_MOMENTUM_SCROLLING}${column}`, true);
-    };
-    /**
-     * @private
-     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
-     * @param {string} column
-     * @return {void}
-     */
-
-
-    this.onMomentumScrollEnd = (event, column) => {
-      this.cache.set(`${IS_MOMENTUM_SCROLLING}${column}`, false);
-
-      if (Platform.OS === 'ios') {
-        event.persist();
-        this.selectIndexFromScrollPosition(event, column, 50);
-      } else {
-        this.selectIndexFromScrollPosition(event, column);
-      }
-    };
-    /**
-     * @private
-     * Scrolls to the nearest index based off a y offset from the FlatList.
-     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
-     * @param {string} column
-     * @param {number?} delay
-     * @return {void}
-     */
-
-
-    this.selectIndexFromScrollPosition = (event, column, delay = 0) => {
-      if (!event.nativeEvent) return;
-      const {
-        y
-      } = event.nativeEvent.contentOffset;
-      const nearestOptionIndex = this.nearestOptionIndex(y, column);
-      setTimeout(() => {
-        const isDragging = this.cache.get(`${IS_DRAGGING}${column}`);
-        const isMomentumScrolling = this.cache.get(`${IS_MOMENTUM_SCROLLING}${column}`);
-
-        if (!isDragging && !isMomentumScrolling) {
-          this.selectIndex(nearestOptionIndex, column);
-        }
-      }, delay);
-    };
-    /**
-     * @private
-     * This method is called when the picker is closed unexpectedly without pressing the
-     * "Done" button in the top right hand corner.
-     * @return {Promise<void>}
-     */
-
-
-    this.onCancel = async () => {
-      const selections = Object.assign({}, (await this.getCurrentSelections()));
-
-      if (this.props.visible !== true) {
-        await this.hide();
-      }
-
-      this.props.onCancel(selections);
-    };
-    /**
-     * @private
-     * This method is called when the right action button (default: "Done") is tapped.
-     * It calls the `onConfirm` method and hides the picker.
-     * @return {Promise<void>}
-     */
-
-
-    this.onConfirm = async () => {
-      const selections = Object.assign({}, (await this.getCurrentSelections()));
-
-      if (this.props.visible !== true) {
-        await this.hide();
-      }
-
-      this.props.onConfirm(selections);
-    };
-    /**
-     * @private
-     * Used by the FlatList to render picklist items.
-     * @return {ReactElement}
-     */
-
-
-    this.renderPickerItem = ({
-      item: {
-        label,
-        column,
-        key,
-        testID
-      },
-      index
-    }) => {
-      const {
-        pickerItemTextColor
-      } = this.props;
-      return (
-        /*#__PURE__*/
-        React.createElement(View, {
-          style: styles.pickerItem
-        },
-        /*#__PURE__*/
-        React.createElement(TouchableOpacity, {
-          activeOpacity: 0.7,
-          onPress: () => this.selectIndex(index, column),
-          testID: testID || key
-        },
-        /*#__PURE__*/
-        React.createElement(Text, {
-          numberOfLines: 1,
-          style: [styles.pickerItemText, {
-            color: pickerItemTextColor
-          }]
-        }, label)))
-      );
-    };
-    /**
-     * @private
-     * Forwards value changes onto the client from the Native iOS UIPicker when it is in use
-     * over the default JavaScript picker implementation.
-     * @param {UIPickerValueChangeEvent}
-     * @return {void}
-     */
+    * @private
+    * Forwards value changes onto the client from the Native iOS UIPicker when it is in use
+    * over the default JavaScript picker implementation.
+    * @param {UIPickerValueChangeEvent}
+    * @return {void}
+    */
 
 
     this.uiPickerValueChange = ({
@@ -857,47 +567,11 @@ class SegmentedPicker extends Component {
     };
 
     this.state = {
-      visible: false,
       pickersHeight: 0
     };
   }
-  /**
-   * Used in rare circumstances where this component is mounted with the `visible`
-   * prop set to true. We must animate the picker in immediately.
-   */
-
-
-  componentDidMount() {
-    if (this.props.visible === true) {
-      this.show();
-    }
-  }
-  /**
-   * Animates in-and-out when toggling picker visibility with the `visible` prop.
-   */
-
-
-  componentDidUpdate(prevProps) {
-    const {
-      visible: visibleProp
-    } = this.props;
-    const {
-      visible: visibleState
-    } = this.state;
-
-    if (visibleProp === true && prevProps.visible !== true && visibleState !== true) {
-      this.show();
-    }
-
-    if (visibleProp === false && prevProps.visible === true) {
-      this.hide();
-    }
-  }
 
   render() {
-    const {
-      visible
-    } = this.state;
     const {
       nativeTestID,
       options,
@@ -916,7 +590,7 @@ class SegmentedPicker extends Component {
       /*#__PURE__*/
       React.createElement(View, {
         style: styles.selectableArea
-      },
+      }, this.isNative() &&
       /*#__PURE__*/
       React.createElement(View, {
         style: styles.nativePickerContainer
