@@ -5,6 +5,7 @@ import { PickerOptions, Selections, SelectionEvent } from '../../config/interfac
 export interface Props {
     native: boolean;
     options: PickerOptions;
+    visible: boolean;
     defaultSelections: Selections;
     size: number;
     confirmText: string;
@@ -21,6 +22,7 @@ export interface Props {
     onConfirm: (event: Selections) => void;
 }
 interface State {
+    visible: boolean;
     pickersHeight: number;
 }
 export default class SegmentedPicker extends Component<Props, State> {
@@ -68,6 +70,27 @@ export default class SegmentedPicker extends Component<Props, State> {
     modalContainerRef: React.RefObject<any>;
     pickerContainerRef: React.RefObject<any>;
     constructor(props: Props);
+    /**
+     * Used in rare circumstances where this component is mounted with the `visible`
+     * prop set to true. We must animate the picker in immediately.
+     */
+    componentDidMount(): void;
+    /**
+     * Animates in-and-out when toggling picker visibility with the `visible` prop.
+     */
+    componentDidUpdate(prevProps: Props): void;
+    /**
+     * Make the picker visible on the screen.
+     * External Usage: `ref.current.show()`
+     * @return {Promise<void>}
+     */
+    show: () => Promise<void>;
+    /**
+     * Hide the picker from the screen.
+     * External Usage: `ref.current.hide()`
+     * @return {Promise<void>}
+     */
+    hide: () => Promise<void>;
     /**
      * Selects a specific picker item `label` in the picklist and focuses it.
      * External Usage: `ref.current.selectLabel()`
@@ -141,6 +164,31 @@ export default class SegmentedPicker extends Component<Props, State> {
     private findItemIndexByValue;
     /**
      * @private
+     * Focuses the default picklist selections.
+     * @return {void}
+     */
+    private setDefaultSelections;
+    /**
+     * @private
+     * @param {string} column
+     * @param {object} ref: The column's rendered FlatList component.
+     * @return {void}
+     */
+    private setFlatListRef;
+    /**
+     * @private
+     * @return {void}
+     */
+    private measurePickersHeight;
+    /**
+     * @private
+     * Calculates the padding top and bottom for the pickers so that the first and
+     * last list items are centered in the marker when fully scrolled up or down.
+     * @return {number}
+     */
+    private pickersVerticalPadding;
+    /**
+     * @private
      * Determines the index of the nearest option in the list based off the specified Y
      * scroll offset.
      * @param {number} offsetY: The scroll view content offset from react native (should
@@ -150,12 +198,76 @@ export default class SegmentedPicker extends Component<Props, State> {
      */
     private nearestOptionIndex;
     /**
-    * @private
-    * Forwards value changes onto the client from the Native iOS UIPicker when it is in use
-    * over the default JavaScript picker implementation.
-    * @param {UIPickerValueChangeEvent}
-    * @return {void}
-    */
+     * @private
+     * Calculates the current scroll direction based off the last and current Y offsets.
+     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
+     * @param {string} column
+     * @return {void}
+     */
+    private onScroll;
+    /**
+     * @private
+     * @param {string} column
+     * @return {void}
+     */
+    private onScrollBeginDrag;
+    /**
+     * @private
+     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
+     * @param {string} column
+     * @return {void}
+     */
+    private onScrollEndDrag;
+    /**
+     * @private
+     * @param {object} event: Event details from React Native.
+     * @param {string} column
+     * @return {void}
+     */
+    private onMomentumScrollBegin;
+    /**
+     * @private
+     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
+     * @param {string} column
+     * @return {void}
+     */
+    private onMomentumScrollEnd;
+    /**
+     * @private
+     * Scrolls to the nearest index based off a y offset from the FlatList.
+     * @param {NativeSyntheticEvent<NativeScrollEvent>} event: Event details from React Native.
+     * @param {string} column
+     * @param {number?} delay
+     * @return {void}
+     */
+    private selectIndexFromScrollPosition;
+    /**
+     * @private
+     * This method is called when the picker is closed unexpectedly without pressing the
+     * "Done" button in the top right hand corner.
+     * @return {Promise<void>}
+     */
+    private onCancel;
+    /**
+     * @private
+     * This method is called when the right action button (default: "Done") is tapped.
+     * It calls the `onConfirm` method and hides the picker.
+     * @return {Promise<void>}
+     */
+    private onConfirm;
+    /**
+     * @private
+     * Used by the FlatList to render picklist items.
+     * @return {ReactElement}
+     */
+    private renderPickerItem;
+    /**
+     * @private
+     * Forwards value changes onto the client from the Native iOS UIPicker when it is in use
+     * over the default JavaScript picker implementation.
+     * @param {UIPickerValueChangeEvent}
+     * @return {void}
+     */
     private uiPickerValueChange;
     render(): JSX.Element;
 }
